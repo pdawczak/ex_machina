@@ -91,6 +91,21 @@ defmodule ExMachina.EctoTest do
     }
   end
 
+  import Ecto.Query
+
+  test "build_pair example" do
+    inserted_company = TestFactory.insert(:company)
+
+    company =
+      from(c in ExMachina.Company,
+        where: c.id == ^inserted_company.id,
+      preload: :team_members)
+      |> ExMachina.TestRepo.one()
+    members = Enum.flat_map(inserted_company.teams, &(&1.team_members))
+
+    assert company.team_members == members
+  end
+
   defp has_association_in_schema?(model, association_name) do
     Enum.member?(model.__schema__(:associations), association_name)
   end

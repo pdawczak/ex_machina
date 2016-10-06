@@ -23,6 +23,27 @@ defmodule ExMachina.TestFactory do
     }
   end
 
+  def team_member_factory do
+    %ExMachina.TeamMember{
+      name: sequence("Member ")
+    }
+  end
+
+  def team_factory do
+    %ExMachina.Team{
+      name: sequence("Team "),
+      team_members: build_pair(:team_member)
+    }
+  end
+
+  def company_factory do
+    teams = build_pair(:team)
+
+    %ExMachina.Company{
+      teams: teams,
+    }
+  end
+
   def invalid_cast_factory do
     %ExMachina.InvalidCast{}
   end

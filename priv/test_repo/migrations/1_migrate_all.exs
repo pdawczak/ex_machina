@@ -15,5 +15,18 @@ defmodule ExMachina.TestRepo.Migrations.MigrateAll do
       add :publisher_id, :integer
       add :visits, :decimal
     end
+
+    create table(:team_members) do
+      add :name, :string
+      add :team_id, :integer
+    end
+
+    create table(:teams) do
+      add :name, :string
+      add :company_id, :integer
+    end
+
+    create table(:companies) do
+    end
   end
 end
