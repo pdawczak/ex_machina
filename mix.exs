@@ -2,7 +2,7 @@ defmodule ExMachina.Mixfile do
   use Mix.Project
 
   @project_url "https://github.com/thoughtbot/ex_machina"
-  @version "1.0.2"
+  @version "2.0.0"
 
   def project() do
     [
@@ -36,10 +36,9 @@ defmodule ExMachina.Mixfile do
     [
       {:ex_doc, "~> 0.9", only: :dev},
       {:earmark, ">= 0.0.0", only: :dev},
-      {:ecto, "~> 2.0", optional: true},
-      {:ecto, "~> 2.0", only: [:dev, :test]},
+      {:ecto, "~> 2.1", optional: true},
       {:postgrex, ">= 0.0.0", only: [:test]},
-      {:poison, "~> 2.0.0", only: :test}
+      {:poison, "~> 3.0", only: :test}
     ]
   end
 

@@ -63,12 +63,12 @@ defmodule ExMachina.EctoStrategy do
       {:ok, value} ->
         value
       _ ->
-        raise "Failed to cast `#{value}` of type #{field_type} in #{inspect struct}."
+        raise "Failed to cast `#{inspect value}` of type #{inspect field_type} in #{inspect struct}."
     end
   end
 
   defp cast_all_assocs(%{__struct__: schema} = struct) do
-    assocs = schema.__schema__(:associations)
+    assocs = get_schema_assocs(schema)
 
     Enum.reduce(assocs, struct, fn(assoc, struct) ->
       casted_value = cast_assoc(assoc, struct)
@@ -82,13 +82,25 @@ defmodule ExMachina.EctoStrategy do
     case original_assoc do
       %{__meta__: %{__struct__: Ecto.Schema.Metadata, state: :built}} ->
         cast(original_assoc)
-      %{__struct__: _} ->
+
+      %{__struct__: Ecto.Association.NotLoaded} ->
         original_assoc
+
+      %{__struct__: _} ->
+        cast(original_assoc)
+
       %{} ->
         assoc_type = schema.__schema__(:association, assoc).related
         assoc_type |> struct |> Map.merge(original_assoc) |> cast
-      _list ->
+
+      list when is_list(list)->
         Enum.map(original_assoc, &(cast(&1)))
+
+      nil -> nil
     end
+  end
+
+  defp get_schema_assocs(schema) do
+    schema.__schema__(:associations) ++ schema.__schema__(:embeds)
   end
 end

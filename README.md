@@ -8,7 +8,7 @@ ExMachina makes it easy to create test data and associations. It works great
 with Ecto, but is configurable to work with any persistence library.
 
 > **This README follows master, which may not be the currently published version**. Here are the
-[docs for the latest published version of ExMachina](https://hexdocs.pm/ex_machina/README.html).
+[docs for the latest published version of ExMachina](https://hexdocs.pm/ex_machina/readme.html).
 
 ## Installation
 
@@ -19,13 +19,13 @@ In `mix.exs`, add the ExMachina dependency:
 ```elixir
 def deps do
   # Get the latest from hex.pm. Works with Ecto 2.0
-  [{:ex_machina, "~> 1.0"}]
+  [{:ex_machina, "~> 2.0"}]
 end
 ```
 
 And start the ExMachina application. For most projects (such as
 Phoenix apps) this will mean adding `:ex_machina` to the list of applications in
-`mix.exs`.
+`mix.exs`. You can skip this step if you are using Elixir 1.4
 
 ```elixir
 def application do
@@ -40,7 +40,7 @@ In `mix.exs`, add the ExMachina dependency:
 
 ```elixir
 def deps do
-  [{:ex_machina, "~> 1.0", only: :test}]
+  [{:ex_machina, "~> 2.0", only: :test}]
 end
 ```
 
@@ -100,7 +100,6 @@ defmodule MyApp.Factory do
     %MyApp.Article{
       title: "Use ExMachina!",
       # associations are inserted when you call `insert`
-      comments: [build(:comment)],
       author: build(:user),
     }
   end
@@ -140,6 +139,11 @@ params_for(:comment, attrs)
 # associations and sets the foreign keys.
 # This is only available when using `ExMachina.Ecto`.
 params_with_assocs(:comment, attrs)
+
+# Use `string_params_for` to generate maps with string keys. This can be useful
+# for Phoenix controller tests.
+string_params_for(:comment, attrs)
+string_params_with_assocs(:comment, attrs)
 ```
 
 ## Usage in a test
@@ -148,7 +152,7 @@ params_with_assocs(:comment, attrs)
 # Example of use in Phoenix with a factory that uses ExMachina.Ecto
 defmodule MyApp.MyModuleTest do
   use MyApp.ConnCase
-  # You can also import this in your MyApp.ConnCase if using Phoenix
+  # If using Phoenix, import this inside the using block in MyApp.ConnCase
   import MyApp.Factory
 
   test "shows comments for an article" do
@@ -180,6 +184,78 @@ Later on you can easily create different factories by creating a new module in
 the same directory. This can be helpful if you need to create factories that are
 used for different repos, your factory module is getting too big, or if you have
 different ways of saving the record for different types of factories.
+
+### Splitting factories into separate files
+
+This example shows how to set up factories for the testing environment. For setting them in all environments, please see the _To install in all environments_ section
+
+> Start by creating main factory module in `test/support/factory.ex` and name it `MyApp.Factory`. The purpose of the main factory is to allow you to include only a single module in all tests.
+
+```elixir
+# test/support/factory.ex
+defmodule MyApp.Factory do
+  use ExMachina.Ecto, repo: MyApp.Repo
+  use MyApp.ArticleFactory
+end
+```
+
+The main factory includes `MyApp.ArticleFactory`, so let's create it next. It might be useful to create a separate directory for factories, like `test/factories`. Here is how to create a factory:
+
+```elixir
+# test/factories/article_factory.ex
+defmodule MyApp.ArticleFactory do
+  defmacro __using__(_opts) do
+    quote do
+      def article_factory do
+        %MyApp.Article{
+          title: "My awesome article!",
+          body: "Still working on it!"
+        }
+      end
+    end
+  end
+end
+```
+
+This way you can split your giant factory file into many small files. But what about name conflicts? Use pattern matching to avoid them!
+
+```elixir
+# test/factories/post_factory.ex
+defmodule MyApp.PostFactory do
+  defmacro __using__(_opts) do
+    quote do
+      def post_factory do
+        %MyApp.Post{
+          body: "Example body"
+        }
+      end
+
+      def with_comments(%MyApp.Post{} = post) do
+        insert_pair(:comment, post: post)
+        post
+      end
+    end
+  end
+end
+
+# test/factories/video_factory.ex
+defmodule MyApp.VideoFactory do
+  defmacro __using__(_opts) do
+    quote do
+      def video_factory do
+        %MyApp.Video{
+          url: "example_url"
+        }
+      end
+
+      def with_comments(%MyApp.Video{} = video) do
+        insert_pair(:comment, video: video)
+        video
+      end
+    end
+  end
+end
+```
 
 ## Ecto Associations
 

@@ -59,10 +59,30 @@ defmodule ExMachina.EctoStrategyTest do
     assert List.first(model.articles).visits == Decimal.new(10)
   end
 
+  test "insert/1 casts embedded associations" do
+    author = %ExMachina.Author{name: "Paul", salary: 10.3}
+    link = %ExMachina.Link{url: "wow", rating: 4.5}
+
+    comment = TestFactory.insert :comment_with_embedded_assocs,
+      author: author,
+      links: [link]
+
+    assert comment.author.name == author.name
+    assert comment.author.salary == Decimal.new(author.salary)
+    assert List.first(comment.links).url == link.url
+    assert List.first(comment.links).rating == Decimal.new(link.rating)
+  end
+
   test "insert/1 ignores virtual fields" do
     user = TestFactory.insert(:user, password: "foo")
 
     assert user.id != nil
+  end
+
+  test "insert/1 sets nil values" do
+    model = TestFactory.insert(:article, author: nil)
+
+    assert model.author == nil
   end
 
   test "insert/1 casts bare maps" do
@@ -101,7 +121,7 @@ defmodule ExMachina.EctoStrategyTest do
   end
 
   test "insert/1 raises a friendly error when casting invalid types" do
-    message = ~r/Failed to cast `invalid` of type Elixir.ExMachina.InvalidType/
+    message = ~r/Failed to cast `:invalid` of type ExMachina.InvalidType/
     assert_raise RuntimeError, message, fn ->
       TestFactory.insert(:invalid_cast, invalid: :invalid)
     end

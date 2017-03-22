@@ -50,22 +50,27 @@ defmodule ExMachina do
         ExMachina.build_list(__MODULE__, number_of_factories, factory_name, attrs)
       end
 
+      @spec create(any) :: no_return
       def create(_) do
         raise_function_replaced_error("create/1", "insert/1")
       end
 
+      @spec create(any, any) :: no_return
       def create(_, _) do
         raise_function_replaced_error("create/2", "insert/2")
       end
 
+      @spec create_pair(any, any) :: no_return
       def create_pair(_, _) do
         raise_function_replaced_error("create_pair/2", "insert_pair/2")
       end
 
+      @spec create_list(any, any, any) :: no_return
       def create_list(_, _, _) do
         raise_function_replaced_error("create_list/3", "insert_list/3")
       end
 
+      @spec raise_function_replaced_error(String.t, String.t) :: no_return
       defp raise_function_replaced_error(old_function, new_function) do
         raise """
         #{old_function} has been removed.
@@ -136,7 +141,7 @@ defmodule ExMachina do
   """
   def build(module, factory_name, attrs \\ %{}) do
     attrs = Enum.into(attrs, %{})
-    function_name = Atom.to_string(factory_name) <> "_factory" |> String.to_atom
+    function_name = build_function_name(factory_name)
     if Code.ensure_loaded?(module) && function_exported?(module, function_name, 0) do
       apply(module, function_name, []) |> do_merge(attrs)
     else
@@ -144,12 +149,15 @@ defmodule ExMachina do
     end
   end
 
-  defp do_merge(%{__struct__: _} = record, attrs) do
-    struct!(record, attrs)
+  defp build_function_name(factory_name) do
+    factory_name
+    |> Atom.to_string
+    |> Kernel.<>("_factory")
+    |> String.to_atom
   end
-  defp do_merge(record, attrs) do
-    Map.merge(record, attrs)
-  end
+
+  defp do_merge(%{__struct__: _} = record, attrs), do: struct!(record, attrs)
+  defp do_merge(record, attrs), do: Map.merge(record, attrs)
 
   @doc """
   Builds and returns 2 records with the passed in factory_name and attrs
@@ -172,19 +180,16 @@ defmodule ExMachina do
       build_list(3, :user)
   """
   def build_list(module, number_of_factories, factory_name, attrs \\ %{}) do
-    Enum.map(1..number_of_factories, fn(_) ->
+    Enum.map 1..number_of_factories, fn(_) ->
       ExMachina.build(module, factory_name, attrs)
-    end)
+    end
   end
 
   defmacro __before_compile__(_env) do
     quote do
-      @doc """
-      Raises a helpful error if no factory is defined.
-      """
-      def factory(factory_name) do
-        raise UndefinedFactoryError, factory_name
-      end
+      @doc "Raises a helpful error if no factory is defined."
+      @spec factory(any) :: no_return
+      def factory(factory_name), do: raise UndefinedFactoryError, factory_name
     end
   end
 end
